@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from app.routes import webhook, send_message
 from app.database import get_database
 from app.routes import websockets
-import asyncio
 
 app = FastAPI()
 
