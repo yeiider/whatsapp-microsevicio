@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from app.routes import webhook, send_message
+from app.routes import webhook, send_message, websockets
 from app.database import get_database
-from app.routes import websockets
 
 app = FastAPI()
 

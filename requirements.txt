@@ -3,3 +3,4 @@ motor
 pydantic
 python-dotenv
 uvicorn
+aiohttp
