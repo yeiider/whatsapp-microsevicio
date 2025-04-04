@@ -3,7 +3,3 @@ motor
 pydantic
 python-dotenv
 uvicorn
-websockets
-os
-datetime
-orjson
