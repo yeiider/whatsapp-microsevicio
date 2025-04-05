@@ -1,6 +1,5 @@
 import os
 import aiohttp
-import base64
 
 async def fetch_chat_info_from_waha(host: str, session_name: str, contact_id: str):
     url = f"{host}/api/{session_name}/chats/overview?page=1&limit=20"
@@ -45,13 +44,14 @@ async def delete_session_if_exists(session_name: str):
 
 async def create_session_in_waha(session_name: str, organization_id: str, driver: str):
     WAHA_API_URL = os.getenv("WAHA_API_URL")
+    BASE_URL = os.getenv("BASE_URL")
     if not WAHA_API_URL:
         raise ValueError("WAHA_API_URL is not set")
 
     # Primero eliminamos la sesión si ya existe
     await delete_session_if_exists(session_name)
 
-    webhook_url = f"{WAHA_API_URL}/webhook/{session_name}"
+    webhook_url = f"{BASE_URL}/webhook/{session_name}"
 
     payload = {
         "name": session_name,
