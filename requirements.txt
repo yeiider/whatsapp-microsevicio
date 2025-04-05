@@ -6,3 +6,4 @@ uvicorn[standard]
 aiohttp
 websockets
 httpx
+base64

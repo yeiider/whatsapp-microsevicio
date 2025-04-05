@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import webhook, send_message, websockets
+from app.routes import webhook, send_message, websockets,whatsapp_api
 from app.database import get_database
 
 app = FastAPI()
@@ -8,6 +8,7 @@ app = FastAPI()
 app.include_router(webhook.router)
 app.include_router(send_message.router)
 app.include_router(websockets.router)
+app.include_router(whatsapp_api.router)
 
 # Ruta base
 @app.get("/")

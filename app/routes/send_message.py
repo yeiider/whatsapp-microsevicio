@@ -11,7 +11,7 @@ router = APIRouter()
 
 # Base URLs por proveedor
 PROVIDER_URLS = {
-    "waha": os.getenv("WAHA_API_URL"),
+    "web": os.getenv("WAHA_API_URL"),
     # futuros proveedores
     # "gupshup": os.getenv("GUPSHUP_API_URL"),
     # "twilio": os.getenv("TWILIO_API_URL"),
@@ -31,7 +31,7 @@ class SendMessageRequest(BaseModel):
 
 # Función principal para construcción de payloads
 def build_payload(provider: str, payload: SendMessageRequest) -> dict:
-    if provider == "waha":
+    if provider == "web":
         return build_waha_payload(payload)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
@@ -88,7 +88,7 @@ def build_waha_payload(payload: SendMessageRequest) -> dict:
 
     return data
 
-@router.post("/send-message")
+@router.post("/api/send-message")
 async def send_message(payload: SendMessageRequest):
     base_url = PROVIDER_URLS.get(payload.provider)
     if not base_url:

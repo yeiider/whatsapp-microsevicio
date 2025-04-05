@@ -3,6 +3,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from app.routes.websockets import emit_event
 from app.services.waha_api import fetch_chat_info_from_waha
+from bson import ObjectId
 
 def replace_media_host(media):
     if media and "url" in media:
@@ -23,11 +24,10 @@ def convert_datetime(obj):
         return [convert_datetime(i) for i in obj]
     return obj
 
-async def handle_event(db, organization_id, payload):
-    provider = payload.get("metadata", {}).get("provider", "waha")
+async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
 
-    if provider == "waha" and event == "message":
+    if driver == "web" and event == "message":
         session_id = payload.get("session")
         message_data = payload.get("payload", {})
         contact_id = message_data.get("from") if not message_data.get("fromMe") else message_data.get("to")
@@ -78,7 +78,7 @@ async def handle_event(db, organization_id, payload):
             chat_doc = {
                 "organization_id": organization_id,
                 "contact_id": contact_id,
-                "provider": provider,
+                "provider": driver,
                 "status": "open",
                 "name": contact_name,
                 "picture": contact_picture,
@@ -131,13 +131,14 @@ async def handle_event(db, organization_id, payload):
         })
 
 
-    elif provider == "waha" and event == "session.status":
+
+    elif driver == "web" and event == "session.status":
         session_name = payload.get("payload", {}).get("name")
         new_status = payload.get("payload", {}).get("status")
         me = payload.get("me")
-
         if session_name:
-            session = await db.whatsapp_sessions.find_one({"sessionName": session_name})
+            session_id= ObjectId(session_id)
+            session = await db.whatsappsessions.find_one({"_id": session_id})
             if session:
                 previous_status = session.get("status")
                 updates = {
@@ -148,20 +149,23 @@ async def handle_event(db, organization_id, payload):
                 if me:
                     updates["me"] = me
 
-                await db.whatsapp_sessions.update_one(
+                await db.whatsappsessions.update_one(
                     {"_id": session["_id"]},
                     {"$set": updates}
                 )
 
                 if new_status == "WORKING":
-                    await emit_event(session_name, {
+                    print("Conectado")
+                    await emit_event(organization_id, {
                         "event": "whatsapp:connected",
-                        "organizationId": session_name,
+                        "organizationId": organization_id,
                         "sessionName": session_name
                     })
-                elif previous_status == "WORKING" and new_status != "WORKING":
-                    await emit_event(session_name, {
+                else:
+                    print("Desconectado")
+                    print(organization_id)
+                    await emit_event(organization_id, {
                         "event": "whatsapp:disconnected",
-                        "organizationId": session_name,
+                        "organizationId": organization_id,
                         "sessionName": session_name
                     })

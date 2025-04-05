@@ -30,9 +30,11 @@ def disconnect_websocket(websocket: WebSocket, organization_id: str):
             del active_connections[organization_id]
 
 async def emit_event(organization_id: str, event: dict):
+    print(event)
     connections = active_connections.get(organization_id, [])
     safe_event = make_json_safe(event)
     for connection in connections:
+        print(f"Emitting event to {connection.client}")
         await connection.send_json(safe_event)
 
 @router.websocket("/ws/{organization_id}")
