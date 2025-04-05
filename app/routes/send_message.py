@@ -28,6 +28,7 @@ class SendMessageRequest(BaseModel):
     url: str = None
     mimetype: str = None
     filename: str = None
+    sessionId: str = None
 
 # Función principal para construcción de payloads
 def build_payload(provider: str, payload: SendMessageRequest) -> dict:
@@ -48,7 +49,7 @@ def clean_payload(data: dict) -> dict:
 def build_waha_payload(payload: SendMessageRequest) -> dict:
     data = {
         "chatId": payload.chatId,
-        "session": payload.session,
+        "session": payload.sessionId,
         "reply_to": None,
     }
 
@@ -85,7 +86,7 @@ def build_waha_payload(payload: SendMessageRequest) -> dict:
         data["asNote"] = False
     else:
         raise ValueError("Invalid message type for WAHA")
-
+    print(data)
     return data
 
 @router.post("/api/send-message")
