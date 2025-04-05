@@ -90,6 +90,7 @@ def build_waha_payload(payload: SendMessageRequest) -> dict:
 
 @router.post("/api/send-message")
 async def send_message(payload: SendMessageRequest):
+    print(payload)
     base_url = PROVIDER_URLS.get(payload.provider)
     if not base_url:
         raise HTTPException(status_code=400, detail=f"Provider '{payload.provider}' not configured")

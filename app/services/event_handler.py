@@ -79,6 +79,7 @@ async def handle_event(db, organization_id, payload, driver,session_id):
                 "organization_id": organization_id,
                 "contact_id": contact_id,
                 "provider": driver,
+                "session": session_id,
                 "status": "open",
                 "name": contact_name,
                 "picture": contact_picture,

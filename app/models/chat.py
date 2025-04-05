@@ -9,6 +9,7 @@ class Chat(BaseModel):
     status: str = "open"
     name: str
     picture: str
+    session: str
     last_message_type:str = "text"
     is_archived: bool = False
     is_silenced: bool = False
