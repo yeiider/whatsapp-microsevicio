@@ -67,7 +67,8 @@ async def handle_event(db, organization_id, payload, driver,session_id):
 
         chat = await db.chats.find_one({
             "organization_id": organization_id,
-            "contact_id": contact_id
+            "contact_id": contact_id,
+            "session": session_id
         })
 
         last_msg = {
