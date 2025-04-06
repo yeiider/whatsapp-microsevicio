@@ -31,10 +31,12 @@ async def handle_event(db, organization_id, payload, driver,session_id):
         session_id = payload.get("session")
         message_data = payload.get("payload", {})
         contact_id = message_data.get("from") if not message_data.get("fromMe") else message_data.get("to")
-
+        if contact_id == "status@broadcast":
+            return
         WAHA_HOST = os.getenv("WAHA_API_URL")
 
         chat_info = await fetch_chat_info_from_waha(WAHA_HOST, session_id, contact_id)
+
         contact_name = chat_info["name"] if chat_info else payload.get("_data", {}).get("pushName", "")
         contact_picture = chat_info["picture"] if chat_info else None
         last_messages_type = chat_info["last_message_type"] if chat_info else "text"
