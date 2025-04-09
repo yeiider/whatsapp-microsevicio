@@ -1,0 +1,38 @@
+# Entornos virtuales
+venv/
+env/
+.venv/
+.env/
+
+# Archivos de entorno (NO subir tus claves)
+.env
+.env.*
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
+
+# Compilaciones de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos de logs
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de pruebas o cobertura
+.coverage
+coverage.xml
+htmlcov/
+
+# Railway
+railway.schema.json
+
+# Otros
+*.sqlite3
+*.db
