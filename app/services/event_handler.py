@@ -55,10 +55,24 @@ async def handle_event(db, organization_id, payload, driver,session_id):
         }
 
         contact = await db.contacts.find_one({
-            "organization_id": organization_id,
+            "organizationId": organization_id,
             "contact_id": contact_id
         })
 
+        webhook = await db.webhooks.find_one({"organizationId": organization_id})
+
+        if webhook and webhook.get("active"):
+            url = webhook["url"]
+            try:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, json=payload) as response:
+                        if response.status != 200:
+                            print(f"Webhook POST failed with status {response.status}")
+            except Exception as e:
+                print(f"Error sending POST request to webhook: {e}")
+            
+            
         if not contact:
             result = await db.contacts.insert_one(contact_doc)
             contact_id_db = result.inserted_id
