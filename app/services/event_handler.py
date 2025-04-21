@@ -132,7 +132,6 @@ async def handle_event(db, organization_id, payload, driver,session_id):
             "updated_at": datetime.utcnow()
         }
 
-        await db.messages.insert_one(message_doc)
 
         await db.chats.update_one(
             {"_id": chat_id},

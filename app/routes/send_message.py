@@ -49,7 +49,7 @@ def clean_payload(data: dict) -> dict:
 def build_waha_payload(payload: SendMessageRequest) -> dict:
     data = {
         "chatId": payload.chatId,
-        "session": payload.sessionId,
+        "session": payload.session,
         "reply_to": None,
     }
 
@@ -149,34 +149,5 @@ async def send_message(payload: SendMessageRequest):
         }
         chat_result = await db.chats.insert_one(chat_doc)
         chat_id = chat_result.inserted_id
-    else:
-        chat_id = chat["_id"]
-
-    body = payload.text or payload.caption or ""
-    media = None
-    if payload.type in ["image", "file", "voice", "video"]:
-        media = {
-            "url": payload.url,
-            "mimetype": payload.mimetype,
-            "filename": payload.filename
-        }
-
-    message_doc = {
-        "chat_id": str(chat_id),
-        "message_id": message_id,
-        "chat_contact_id":payload.chatId,
-        "timestamp": int(datetime.utcnow().timestamp()),
-        "from": payload.user,
-        "to": payload.chatId,
-        "from_me": True,
-        "body": body,
-        "has_media": bool(media),
-        "media": media,
-        "session": payload.session,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-
-    await db.messages.insert_one(message_doc)
 
     return result
