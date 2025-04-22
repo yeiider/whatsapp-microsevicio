@@ -76,9 +76,9 @@ async def handle_event(db, organization_id, payload, driver,session_id):
         for chat in chat_infos:
             if chat["id"] == contact_id:
                 last_message = chat.get("lastMessage", {})
-                message_data = last_message.get("_data", {}).get("message", {})
+                message_data_last = last_message.get("_data", {}).get("message", {})
                 message_type = "text"
-                for key in message_data.keys():
+                for key in message_data_last.keys():
                     if key.endswith("Message") and key != "extendedTextMessage":
                         message_type = key.replace("Message", "")
                         break
@@ -167,7 +167,7 @@ async def handle_event(db, organization_id, payload, driver,session_id):
 
         message_doc = {
             "id":contact_id,
-            "sender": "agent",
+            "sender": "user",
             "content": message_data.get("body"),
             "status": "delivered",
             "timestamp":message_data.get("timestamp"),
