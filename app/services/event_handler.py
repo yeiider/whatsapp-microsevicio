@@ -63,6 +63,7 @@ def get_media_type(mimetype):
 
 async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
+    print(payload)
     if driver == "web" and event == "message":
         message_data = payload.get("message", {})
         session_id = message_data.get("session")
