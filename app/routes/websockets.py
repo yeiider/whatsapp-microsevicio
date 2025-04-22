@@ -19,8 +19,11 @@ def make_json_safe(obj):
 
 async def connect_websocket(websocket: WebSocket, organization_id: str):
     await websocket.accept()
+    print(f"New connection from {websocket.client}")
+    print(organization_id)
     if organization_id not in active_connections:
         active_connections[organization_id] = []
+        print("se agrego a la conexion")
     active_connections[organization_id].append(websocket)
 
 def disconnect_websocket(websocket: WebSocket, organization_id: str):
@@ -29,9 +32,11 @@ def disconnect_websocket(websocket: WebSocket, organization_id: str):
         if not active_connections[organization_id]:
             del active_connections[organization_id]
 
-async def emit_event(organization_id: str, event: dict):
-    print(event)
-    connections = active_connections.get(organization_id, [])
+async def emit_event(session_id: str, event: dict):
+    print("antes de emitir mensaje de websocket")
+    print(session_id)
+    connections = active_connections.get(session_id, [])
+    print(connections)
     safe_event = make_json_safe(event)
     for connection in connections:
         print(f"Emitting event to {connection.client}")
@@ -44,4 +49,15 @@ async def websocket_endpoint(websocket: WebSocket, organization_id: str):
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        print(f"Disconnected from {websocket.client}")
+        disconnect_websocket(websocket, organization_id)
+
+@router.websocket("/ws/{organization_id}/{chatId}")
+async def websocket_endpoint(websocket: WebSocket, organization_id: str):
+    await connect_websocket(websocket, organization_id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        print(f"Disconnected from {websocket.client}")
         disconnect_websocket(websocket, organization_id)

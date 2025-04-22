@@ -3,7 +3,8 @@ from datetime import datetime
 from urllib.parse import urlparse
 from app.routes.websockets import emit_event
 from app.services.waha_api import fetch_chat_info_from_waha
-from bson import ObjectId
+from bson import ObjectId, timestamp
+
 
 def replace_media_host(media):
     if media and "url" in media:
@@ -24,18 +25,68 @@ def convert_datetime(obj):
         return [convert_datetime(i) for i in obj]
     return obj
 
+def get_attachments_from_message_data(message_data):
+    # Verifica si 'has_media' es True y si 'media' está presente en el mensaje
+    if message_data.get('has_media') and 'media' in message_data:
+        media = message_data['media']
+        attachments = [
+            {
+                "id": message_data.get('id'),
+                "type": get_media_type(media.get('mimetype', "")),
+                "url": media.get('url'),
+                "name": media.get('filename'),
+                "mimetype": media.get('mimetype'),
+                "width": media.get('width'),  # Si necesitas width
+                "height": media.get('height'),  # Si necesitas height
+                "size": media.get('size'),  # Si necesitas size
+            }
+        ]
+        return attachments  # Devuelve la lista de attachments
+    return None  # Devuelve None si no hay media
+
+
+def get_media_type(mimetype):
+    # Determina el tipo de media con base en el MIME type
+    if mimetype.startswith("image"):
+        return "image"
+    elif mimetype.startswith("video"):
+        return "video"
+    elif mimetype.startswith("audio"):
+        return "audio"
+    elif mimetype.startswith("application"):
+        return "document"
+    else:
+        return "unknown"
+
+
+
+
 async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
-
-    if driver == "web" and event == "message":
-        session_id = payload.get("session")
-        message_data = payload.get("payload", {})
+    if driver == "web" and event == "new_message":
+        message_data = payload.get("message", {})
+        session_id = message_data.get("session")
         contact_id = message_data.get("from") if not message_data.get("fromMe") else message_data.get("to")
         if contact_id == "status@broadcast":
             return
         WAHA_HOST = os.getenv("WAHA_API_URL")
+        chat_infos = await fetch_chat_info_from_waha(WAHA_HOST, session_id, contact_id)
+        chat_info = None
+        for chat in chat_infos:
+            if chat["id"] == contact_id:
+                last_message = chat.get("lastMessage", {})
+                message_data = last_message.get("_data", {}).get("message", {})
+                message_type = "text"
+                for key in message_data.keys():
+                    if key.endswith("Message") and key != "extendedTextMessage":
+                        message_type = key.replace("Message", "")
+                        break
 
-        chat_info = await fetch_chat_info_from_waha(WAHA_HOST, session_id, contact_id)
+                chat_info = {
+                    "name": chat.get("name"),
+                    "picture": chat.get("picture"),
+                    "last_message_type": message_type,
+                }
 
         contact_name = chat_info["name"] if chat_info else payload.get("_data", {}).get("pushName", "")
         contact_picture = chat_info["picture"] if chat_info else None
@@ -114,22 +165,12 @@ async def handle_event(db, organization_id, payload, driver,session_id):
             chat_id = chat["_id"]
 
         message_doc = {
-            "chat_id": str(chat_id),
-            "chat_contact_id": contact_id,
-            "message_id": message_data.get("id"),
-            "timestamp": message_data.get("timestamp"),
-            "from": message_data.get("from"),
-            "to": message_data.get("to"),
-            "from_me": message_data.get("fromMe", False),
-            "body": message_data.get("body"),
-            "has_media": message_data.get("hasMedia", False),
-            "media": replace_media_host(message_data.get("media")),
-            "reply_to": message_data.get("replyTo"),
-            "session": session_id,
-            "user": None,
-            "me": payload.get("me"),
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "id":contact_id,
+            "sender": "agent",
+            "content": message_data.get("body"),
+            "status": "delivered",
+            "timestamp":message_data.get("timestamp"),
+            "attachments": get_attachments_from_message_data(message_data),
         }
 
 
@@ -141,11 +182,14 @@ async def handle_event(db, organization_id, payload, driver,session_id):
             }}
         )
 
-        await emit_event(organization_id, {
+
+        await emit_event(session_id, {
             "event": "new_message",
             "chatId": contact_id,
-            "message": message_doc
+            "message": message_doc,
+            "overview": chat_infos
         })
+
 
 
 
