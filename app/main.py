@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import webhook, send_message, websockets,whatsapp_api
+from app.routes import webhook, send_message, websockets, whatsapp_api, chats
 from app.database import get_database
 
 app = FastAPI()
@@ -9,6 +9,7 @@ app.include_router(webhook.router)
 app.include_router(send_message.router)
 app.include_router(websockets.router)
 app.include_router(whatsapp_api.router)
+app.include_router(chats.router)
 
 # Ruta base
 @app.get("/")
@@ -30,6 +31,20 @@ async def delete_all_messages():
     except Exception as e:
         print(e)
 
+@app.delete("/chats")
+async def delete_all_messages():
+    """
+    Endpoint para eliminar todos los mensajes.
+    """
+    db = get_database()
+    try:
+        result = await db["chats"].delete_many({})
+        return {
+            "status": "success",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        print(e)
 # Endpoint para verificar conexión a Mongo
 @app.get("/health")
 async def health_check():

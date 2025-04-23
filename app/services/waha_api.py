@@ -1,8 +1,8 @@
 import os
 import aiohttp
 
-async def fetch_chat_info_from_waha(host: str, session_name: str, contact_id: str):
-    url = f"{host}/api/{session_name}/chats/overview?page=1&limit=20"
+async def fetch_chat_info_from_waha(host: str, session_name: str, limit: int = 20):
+    url = f"{host}/api/{session_name}/chats/overview?page=1&limit={limit}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
