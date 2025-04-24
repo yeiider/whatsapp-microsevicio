@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 from app.services.waha_api import fetch_chat_info_from_waha
 
@@ -22,8 +22,9 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         return []
 
     synced_chats = []
+    prev_valid_timestamp = int(datetime.utcnow().timestamp())
 
-    for chat in chat_overviews:
+    for idx, chat in enumerate(chat_overviews):
         contact_id = chat.get("id")
         if not contact_id:
             continue
@@ -31,6 +32,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         last_message = chat.get("lastMessage")
         last_msg = False
         updated_at = datetime.utcnow()
+        raw_timestamp = None
 
         if last_message:
             message_data_last = last_message.get("_data", {}).get("message", {})
@@ -40,18 +42,20 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                     message_type = key.replace("Message", "")
                     break
 
+            raw_timestamp = last_message.get("timestamp")
             last_msg = {
-                "text": last_message.get("text") or "[media]",
-                "timestamp": last_message.get("timestamp"),
+                "text": last_message.get("body") or "[media]",
+                "timestamp": raw_timestamp,
                 "type": message_type
             }
 
-            if last_msg.get("timestamp"):
-                try:
-                    updated_at = datetime.utcfromtimestamp(last_msg["timestamp"])
-                except Exception as e:
-                    print(f"[sync] Error al convertir timestamp: {e}")
-                    updated_at = datetime.utcnow()
+        # Si no hay timestamp, usamos el anterior válido y lo incrementamos
+        if raw_timestamp:
+            prev_valid_timestamp = raw_timestamp
+        else:
+            raw_timestamp = prev_valid_timestamp + idx  # fallback progresivo
+
+        updated_at = datetime.utcfromtimestamp(raw_timestamp) + timedelta(milliseconds=idx)
 
         base_data = {
             "organization_id": organization_id,
@@ -66,6 +70,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
             "is_read": False,
             "tags": [],
             "last_message": last_msg,
+            "last_activity": raw_timestamp,
             "updated_at": updated_at
         }
 
@@ -78,7 +83,15 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         if existing_chat:
             await db.chats.update_one(
                 {"_id": existing_chat["_id"]},
-                {"$set": base_data}
+                {
+                    "$set": {
+                        "name": chat.get("name"),
+                        "picture": chat.get("picture"),
+                        "last_message": last_msg,
+                        "updated_at": updated_at,
+                        "last_activity": raw_timestamp
+                    }
+                }
             )
             base_data["_id"] = existing_chat["_id"]
         else:

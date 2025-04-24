@@ -44,6 +44,6 @@ async def receive_webhook(
 
     # Procesar evento
     body = await request.json()
-    await handle_event(db, organization_uuid, body, driver,session_name)
+    await handle_event(db, session["organizationId"], body, driver,session_name)
 
     return {"message": "received"}
