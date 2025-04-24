@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from bson import ObjectId
 from app.services.waha_api import fetch_chat_info_from_waha
+from app.services.contact_extended import sync_contact_extended
 
 
 def serialize_mongo_document(doc: dict):
@@ -29,9 +30,9 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         if not contact_id:
             continue
 
+        is_group = contact_id.endswith("@g.us")
         last_message = chat.get("lastMessage")
         last_msg = False
-        updated_at = datetime.utcnow()
         raw_timestamp = None
 
         if last_message:
@@ -53,7 +54,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         if raw_timestamp:
             prev_valid_timestamp = raw_timestamp
         else:
-            raw_timestamp = prev_valid_timestamp + idx  # fallback progresivo
+            raw_timestamp = prev_valid_timestamp + idx
 
         updated_at = datetime.utcfromtimestamp(raw_timestamp) + timedelta(milliseconds=idx)
 
@@ -69,6 +70,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
             "is_silenced": False,
             "is_read": False,
             "tags": [],
+            "is_group": is_group,
             "last_message": last_msg,
             "last_activity": raw_timestamp,
             "updated_at": updated_at
@@ -98,6 +100,17 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
             base_data["created_at"] = updated_at
             result = await db.chats.insert_one(base_data)
             base_data["_id"] = result.inserted_id
+
+            if not is_group:
+                await sync_contact_extended(
+                    db=db,
+                    contact_id=contact_id,
+                    name=chat.get("name"),
+                    phone=contact_id.replace("@c.us", ""),
+                    picture=chat.get("picture"),
+                    organization_id=organization_id,
+                    updated_at=updated_at
+                )
 
         synced_chats.append(serialize_mongo_document(base_data))
 

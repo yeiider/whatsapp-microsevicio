@@ -39,6 +39,7 @@ async def delete_all_messages():
     db = get_database()
     try:
         result = await db["chats"].delete_many({})
+        await db["contactextendeds"].delete_many({})
         return {
             "status": "success",
             "deleted_count": result.deleted_count
