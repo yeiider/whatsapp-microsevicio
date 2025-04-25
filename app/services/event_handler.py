@@ -71,6 +71,7 @@ def get_media_type(mimetype):
 
 async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
+    print(event)
     from app.services.notification_webhook import send_notification_webhook
 
     if driver == "web" and event == "message":
