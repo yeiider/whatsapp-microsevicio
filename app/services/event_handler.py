@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from urllib.parse import urlparse
+from app.services.notification_webhook import send_notification_webhook
 
 from app.services.chat_sync import sync_latest_chats_from_overview
 from app.routes.websockets import emit_event
@@ -70,7 +71,8 @@ def get_media_type(mimetype):
 
 async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
-    print(payload)
+    from app.services.notification_webhook import send_notification_webhook
+
     if driver == "web" and event == "message":
         message_data = payload.get("payload", {})
         session_id = payload.get("session")
@@ -78,24 +80,37 @@ async def handle_event(db, organization_id, payload, driver,session_id):
         if contact_id == "status@broadcast":
             return
 
-        latest_chats = await sync_latest_chats_from_overview(db, session_id, organization_id)
+        # 1. Obtener contacto desde base
 
+
+        # 2. Obtener chats (overview)
+        chat_overviews = await sync_latest_chats_from_overview(db, session_id, organization_id)
+        chat_data = next((c for c in chat_overviews if c.get("id") == contact_id), None)
+
+        contact_data = await db.contacts.find_one({
+            "contact_id": contact_id,
+            "organizationId": ObjectId(organization_id)
+        })
+        # 3. Armar documento de mensaje
         message_doc = {
-            "id":contact_id,
+            "id": contact_id,
             "sender": "user",
             "content": message_data.get("body"),
             "status": "delivered",
-            "timestamp":message_data.get("timestamp"),
+            "timestamp": message_data.get("timestamp"),
             "attachments": get_attachments_from_message_data(message_data),
         }
 
+        # 4. Emitir WebSocket
         await emit_event(session_id, {
             "event": "new_message",
             "chatId": contact_id,
             "message": message_doc,
-            "overview": latest_chats
+            "overview": chat_overviews
         })
 
+        # 5. Enviar webhook si hay
+        await send_notification_webhook(db, organization_id, message_data, chat_data, contact_data)
 
 
 
