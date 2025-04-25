@@ -71,13 +71,13 @@ def get_media_type(mimetype):
 
 async def handle_event(db, organization_id, payload, driver,session_id):
     event = payload.get("event")
-    print(event)
-    from app.services.notification_webhook import send_notification_webhook
+    print(f"🔵 Received event: {payload} | Driver: {driver} | Session: {session_id}")
 
     if driver == "web" and event == "message":
         message_data = payload.get("payload", {})
         session_id = payload.get("session")
         contact_id = message_data.get("from") if not message_data.get("fromMe") else message_data.get("to")
+
         if contact_id == "status@broadcast":
             return
 
@@ -138,15 +138,14 @@ async def handle_event(db, organization_id, payload, driver,session_id):
                 )
 
                 if new_status == "WORKING":
-                    print("Conectado")
+                    print(f"🟢 WhatsApp Connected | Session: {session_name} | Organization: {organization_id}")
                     await emit_event(organization_id, {
                         "event": "whatsapp:connected",
                         "organizationId": organization_id,
                         "sessionName": session_name
                     })
                 else:
-                    print("Desconectado")
-                    print(organization_id)
+                    print(f"🔴 WhatsApp Disconnected | Session: {session_name} | Organization: {organization_id}")
                     await emit_event(organization_id, {
                         "event": "whatsapp:disconnected",
                         "organizationId": organization_id,
