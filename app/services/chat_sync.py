@@ -83,7 +83,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         })
 
         if existing_chat:
-            await db.chats.update_one(
+            result = await db.chats.update_one(
                 {"_id": existing_chat["_id"]},
                 {
                     "$set": {
@@ -92,7 +92,8 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                         "last_message": last_msg,
                         "updated_at": updated_at,
                         "last_activity": raw_timestamp
-                    }
+                    },
+                    "$currentDate": {"lastUpdated": True}
                 }
             )
             base_data["_id"] = existing_chat["_id"]

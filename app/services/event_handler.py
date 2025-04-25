@@ -85,7 +85,8 @@ async def handle_event(db, organization_id, payload, driver,session_id):
 
 
         # 2. Obtener chats (overview)
-        chat_overviews = await sync_latest_chats_from_overview(db, session_id, organization_id)
+
+        chat_overviews = await sync_latest_chats_from_overview(db, session_id, str(organization_id))
         chat_data = next((c for c in chat_overviews if c.get("id") == contact_id), None)
 
         contact_data = await db.contacts.find_one({
