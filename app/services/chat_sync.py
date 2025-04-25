@@ -70,6 +70,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
             "is_silenced": False,
             "is_read": False,
             "tags": [],
+            "message_status": chat.get("ackName"),
             "is_group": is_group,
             "last_message": last_msg,
             "last_activity": raw_timestamp,
@@ -91,6 +92,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                         "picture": chat.get("picture"),
                         "last_message": last_msg,
                         "updated_at": updated_at,
+                        "message_status": chat.get("ackName"),
                         "last_activity": raw_timestamp
                     },
                     "$currentDate": {"lastUpdated": True}
