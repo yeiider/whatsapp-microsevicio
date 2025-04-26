@@ -12,6 +12,8 @@ def serialize_mongo_document(doc: dict):
     }
 
 
+
+
 async def sync_latest_chats_from_overview(db, session_id: str, organization_id: str, limit: int = 20):
     WAHA_API_URL = os.getenv("WAHA_API_URL")
     if not WAHA_API_URL:
@@ -22,7 +24,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         print(f"[sync] No se pudo obtener overview para sesión {session_id}")
         return []
 
-    synced_chats = []
+    mongodb_operations = []
     prev_valid_timestamp = int(datetime.utcnow().timestamp())
 
     for idx, chat in enumerate(chat_overviews):
@@ -50,7 +52,6 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                 "type": message_type
             }
 
-        # Si no hay timestamp, usamos el anterior válido y lo incrementamos
         if raw_timestamp:
             prev_valid_timestamp = raw_timestamp
         else:
@@ -70,7 +71,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
             "is_silenced": False,
             "is_read": False,
             "tags": [],
-            "message_status": chat.get("ackName"),
+            "message_status": last_message.get("ackName") if last_message else None,
             "is_group": is_group,
             "last_message": last_msg,
             "last_activity": raw_timestamp,
@@ -84,7 +85,7 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
         })
 
         if existing_chat:
-            result = await db.chats.update_one(
+            await db.chats.update_one(
                 {"_id": existing_chat["_id"]},
                 {
                     "$set": {
@@ -92,17 +93,20 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                         "picture": chat.get("picture"),
                         "last_message": last_msg,
                         "updated_at": updated_at,
-                        "message_status": chat.get("ackName"),
+                        "message_status": last_message.get("ackName") if last_message else None,
                         "last_activity": raw_timestamp
                     },
                     "$currentDate": {"lastUpdated": True}
                 }
             )
-            base_data["_id"] = existing_chat["_id"]
+            # Obtener el documento actualizado
+            updated_chat = await db.chats.find_one({"_id": existing_chat["_id"]})
+            mongodb_operations.append(serialize_mongo_document(updated_chat))
         else:
             base_data["created_at"] = updated_at
             result = await db.chats.insert_one(base_data)
             base_data["_id"] = result.inserted_id
+            mongodb_operations.append(serialize_mongo_document(base_data))
 
             if not is_group:
                 await sync_contact_extended(
@@ -115,6 +119,4 @@ async def sync_latest_chats_from_overview(db, session_id: str, organization_id: 
                     updated_at=updated_at
                 )
 
-        synced_chats.append(serialize_mongo_document(base_data))
-
-    return synced_chats
+    return mongodb_operations
