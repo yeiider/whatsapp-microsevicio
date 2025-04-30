@@ -18,7 +18,7 @@ async def sync_chats(session_id: str, user_id: str, db=Depends(get_database)):
             db=db,
             session_id=session_id,
             organization_id=organization_id,
-            limit=100  # o sin límite si quieres traer todo
+            limit=500
         )
 
         return {
