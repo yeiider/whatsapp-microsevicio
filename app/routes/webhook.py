@@ -6,15 +6,16 @@ from bson import ObjectId
 
 router = APIRouter()
 
+
 @router.post("/webhook/{session_name}")
 async def receive_webhook(
-    session_name: str = Path(...),
-    x_org_token: str = Header(...),
-    driver: str = Header(...),
-    request: Request = None
+        session_name: str = Path(...),
+        x_org_token: str = Header(...),
+        driver: str = Header(...),
+        request: Request = None
 ):
     db = get_database()
-
+    print(request.json())
     # Buscar la sesión en Mongo usando el ID (que también es el session_name)
     try:
         session_id = ObjectId(session_name)
@@ -44,6 +45,6 @@ async def receive_webhook(
 
     # Procesar evento
     body = await request.json()
-    await handle_event(db, session["organizationId"], body, driver,session_name)
+    await handle_event(db, session["organizationId"], body, driver, session_name)
 
     return {"message": "received"}
