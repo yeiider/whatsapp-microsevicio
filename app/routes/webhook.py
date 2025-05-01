@@ -15,7 +15,8 @@ async def receive_webhook(
         request: Request = None
 ):
     db = get_database()
-    print(request.json())
+    body = await request.json()
+    print(body)
     # Buscar la sesión en Mongo usando el ID (que también es el session_name)
     try:
         session_id = ObjectId(session_name)
@@ -44,7 +45,7 @@ async def receive_webhook(
         raise HTTPException(status_code=403, detail="Driver mismatch")
 
     # Procesar evento
-    body = await request.json()
+
     await handle_event(db, session["organizationId"], body, driver, session_name)
 
     return {"message": "received"}
