@@ -15,10 +15,10 @@ def serialize_mongo_document(doc: dict):
 
 
 async def sync_latest_chats_from_overview(
-    db,
-    session_id: str,
-    organization_id: str,
-    limit: int = 20,
+        db,
+        session_id: str,
+        organization_id: str,
+        limit: int = 20,
 ):
     """
     Sincroniza la lista de chats/overviews que devuelve Waha y los guarda
@@ -58,8 +58,8 @@ async def sync_latest_chats_from_overview(
         if last_message:
             # El type está dentro de `_data.message` o directo en `_data`
             message_data_last = (
-                last_message.get("_data", {}).get("message", {})
-                or last_message.get("_data", {})
+                    last_message.get("_data", {}).get("message", {})
+                    or last_message.get("_data", {})
             )
             message_type = message_data_last.get("type")
 
@@ -68,6 +68,7 @@ async def sync_latest_chats_from_overview(
                 "text": last_message.get("body") or "[media]",
                 "timestamp": raw_timestamp,
                 "type": message_type,
+                "id": last_message.get("id"),
             }
 
         # Garantiza que siempre tengamos un timestamp coherente
