@@ -16,7 +16,6 @@ async def receive_webhook(
 ):
     db = get_database()
     body = await request.json()
-    print(body)
     # Buscar la sesión en Mongo usando el ID (que también es el session_name)
     try:
         session_id = ObjectId(session_name)
