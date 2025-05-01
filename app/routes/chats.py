@@ -14,11 +14,12 @@ async def sync_chats(session_id: str, user_id: str, db=Depends(get_database)):
     """
     try:
         organization_id = await get_user_organization(db, user_id)
+        print(organization_id)
         synced_chats = await sync_latest_chats_from_overview(
             db=db,
             session_id=session_id,
             organization_id=organization_id,
-            limit=500
+            limit=200
         )
 
         return {
