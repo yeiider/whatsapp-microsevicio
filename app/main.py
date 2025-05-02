@@ -31,7 +31,7 @@ async def delete_all_messages():
     except Exception as e:
         print(e)
 
-@app.delete("/chats")
+#@app.delete("/chats")
 async def delete_all_messages():
     """
     Endpoint para eliminar todos los mensajes.
