@@ -3,6 +3,17 @@ from bson import ObjectId
 from datetime import datetime
 from app.utils.helpers import convert_datetime
 
+def convert_to_serializable(data):
+    if isinstance(data, dict):
+        return {key: convert_to_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_to_serializable(item) for item in data]
+    elif isinstance(data, ObjectId):
+        return str(data)
+    elif isinstance(data, datetime):
+        return data.isoformat()
+    return data
+
 async def send_notification_webhook(db, organization_id, message_data, chat, contact):
     webhooks = await db.webhooks.find({
         "organizationId": ObjectId(organization_id),
@@ -12,10 +23,7 @@ async def send_notification_webhook(db, organization_id, message_data, chat, con
     if not webhooks:
         print("🔕 No hay webhooks configurados.")
         return
-    chat_copy = chat.copy()
-
-    if chat_copy.get('assigned_to') and '_id' in chat_copy['assigned_to']:
-        chat_copy['assigned_to']['_id'] = str(chat_copy['assigned_to']['_id'])
+    chat_copy = convert_to_serializable(chat)
 
     payload = {
         "message": {
@@ -31,7 +39,6 @@ async def send_notification_webhook(db, organization_id, message_data, chat, con
         "contact": contact,
         "organizationId": str(organization_id)
     }
-
 
     for webhook in webhooks:
         url = webhook.get("url")
