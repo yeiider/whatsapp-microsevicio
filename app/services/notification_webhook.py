@@ -12,6 +12,11 @@ async def send_notification_webhook(db, organization_id, message_data, chat, con
     if not webhooks:
         print("🔕 No hay webhooks configurados.")
         return
+    chat_copy = chat.copy()
+
+    if chat_copy.get('assigned_to') and '_id' in chat_copy['assigned_to']:
+        chat_copy['assigned_to']['_id'] = str(chat_copy['assigned_to']['_id'])
+
     payload = {
         "message": {
             "id": message_data.get("id"),
@@ -22,12 +27,11 @@ async def send_notification_webhook(db, organization_id, message_data, chat, con
             "body": message_data.get("body"),
             "media": message_data.get("media"),
         },
-        "chat": chat,
+        "chat": chat_copy,
         "contact": contact,
         "organizationId": str(organization_id)
     }
 
-    payload = convert_datetime(payload)
 
     for webhook in webhooks:
         url = webhook.get("url")
@@ -56,7 +60,6 @@ async def send_notification_webhook(db, organization_id, message_data, chat, con
 
                     print(f"📤 Webhook enviado a {url}, status: {status}")
         except Exception as e:
-            # ❌ Si falla, también guarda log con status 500
             await db.webhooklogs.insert_one({
                 "webhookId": webhook["_id"],
                 "organizationId": ObjectId(organization_id),
