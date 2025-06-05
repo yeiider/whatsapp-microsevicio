@@ -18,7 +18,7 @@ async def sync_latest_chats_from_overview(
         db,
         session_id: str,
         organization_id: str,
-        limit: int = 20,
+        limit: int = 50,
 ):
     """
     Sincroniza la lista de chats/overviews que devuelve Waha y los guarda
